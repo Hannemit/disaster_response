@@ -70,9 +70,9 @@ def clean_data(df):
 
 
 def save_data(df, database_filename):
-    assert database_filename[-3:] != ".db", "database filename must not end in '.db'"
-    engine = create_engine(f"sqlite:///{database_filename}.db")
-    df.to_sql(f"{database_filename}", engine, index=False)
+    assert database_filename[-3:] == ".db", "database filename must end in '.db'"
+    engine = create_engine(f"sqlite:///{database_filename}")
+    df.to_sql(f"{database_filename[:-3]}", engine, index=False)
 
 
 def main():
@@ -97,7 +97,7 @@ def main():
               "well as the filepath of the database to save the cleaned data "
               "to as the third argument. \n\nExample: python process_data.py "
               "disaster_messages.csv disaster_categories.csv "
-              "DisasterResponse")
+              "DisasterResponse.db")
 
 
 if __name__ == '__main__':
