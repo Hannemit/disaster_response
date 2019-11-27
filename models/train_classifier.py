@@ -7,6 +7,7 @@ import nltk
 from nltk.tokenize import word_tokenize
 from nltk.corpus import stopwords
 from nltk.stem.wordnet import WordNetLemmatizer
+import os
 
 from sklearn.pipeline import Pipeline, FeatureUnion
 from sklearn.model_selection import train_test_split, GridSearchCV
@@ -15,6 +16,10 @@ from sklearn.feature_extraction.text import CountVectorizer, TfidfTransformer
 
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.multioutput import MultiOutputClassifier
+
+nltk.download('stopwords')
+nltk.download('punkt')
+nltk.download('wordnet')
 
 import pickle
 
@@ -25,7 +30,8 @@ def load_data(database_filepath, data_base_name=None):
     assert database_filepath[-3:] == ".db", "include the .db extension in the database filepath"
     if data_base_name is None:
         data_base_name = database_filepath[:-3]
-    engine = create_engine(f"sqlite:///{database_filepath}")
+    engine = create_engine(f"sqlite:///data/{database_filepath}")
+    print(f"engine created. Now trying to read table {data_base_name}")
     df = pd.read_sql_table(f"{data_base_name}", engine)
     inputs = df["message"]
     labels = df.drop(columns=["id", "message", "original", "genre"], axis=1)
@@ -83,14 +89,15 @@ def build_model():
     pipeline = Pipeline([
         ("count_vec", CountVectorizer(tokenizer=tokenize)),
         ("tfidf", TfidfTransformer()),
-        ("classifier", MultiOutputClassifier(RandomForestClassifier())),
+        ("classifier", MultiOutputClassifier(RandomForestClassifier(n_estimators=100))),
     ])
 
     parameters = {"count_vec__max_df": [0.95, 0.99, 1.0],
-                  "count_vec__min_df": [0.005, 0.01, 1],
+                  #"count_vec__min_df": [0.005, 0.01, 1],
                   # "classifier__estimator__n_estimators": [10, 50, 100],
-                  "classifier__estimator__max_features": ["sqrt", "log2"]}
-    model = GridSearchCV(pipeline, parameters)
+                  #"classifier__estimator__max_features": ["sqrt", "log2"]
+                  }
+    model = GridSearchCV(pipeline, parameters, cv="warn")
     return model
 
 
@@ -129,6 +136,7 @@ def main():
     if len(sys.argv) == 3:
         database_filepath, model_filepath = sys.argv[1:]
         print(f"Loading data...\n    DATABASE: {database_filepath}")
+        print(f"current directory {os.getcwd()}")
         inputs, labels = load_data(database_filepath)
         labels, category_names = process_labels(labels)
 
@@ -152,7 +160,7 @@ def main():
         print("Please provide the filepath of the disaster messages database "
               "as the first argument and the filepath of the pickle file to "
               "save the model to as the second argument. \n\nExample: python "
-              "train_classifier.py ../data/DisasterResponse.db classifier.pkl")
+              "train_classifier.py ../data/DisasterResponse.db models/classifier.pkl")
 
 
 if __name__ == '__main__':

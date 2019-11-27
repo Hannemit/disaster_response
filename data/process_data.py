@@ -71,7 +71,7 @@ def clean_data(df):
 
 def save_data(df, database_filename):
     assert database_filename[-3:] == ".db", "database filename must end in '.db'"
-    engine = create_engine(f"sqlite:///{database_filename}")
+    engine = create_engine(f"sqlite:///data/{database_filename}")
     df.to_sql(f"{database_filename[:-3]}", engine, index=False)
 
 
