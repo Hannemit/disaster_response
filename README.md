@@ -1,5 +1,14 @@
 # Disaster Response Pipeline Project
 
+### Requirements:
+
+##### Create virtual environment
+python 3.7.5
+
+#### install other requirements
+`pip install requirements.txt`
+
+
 ### Instructions:
 1. Run the following commands in the project's root directory to set up your database and model.
 
