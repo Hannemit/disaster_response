@@ -91,7 +91,7 @@ def build_model(do_gridsearch: bool = True):
                   }
 
     if do_gridsearch:
-        model = GridSearchCV(pipeline, parameters, cv=5)
+        model = GridSearchCV(pipeline, parameters, cv=5, n_jobs=4, verbose=2)
     else:
         model = pipeline
     return model
