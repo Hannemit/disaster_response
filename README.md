@@ -27,7 +27,7 @@ First, activate the virtual environment
 
 then, install the requirements  
 
-`pip install requirements.txt`
+`pip install -r requirements.txt`
 
 
 ### Instructions:
