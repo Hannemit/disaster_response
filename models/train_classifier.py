@@ -39,27 +39,15 @@ def load_data(database_filepath, data_base_name=None):
     return inputs, labels
 
 
-def process_labels(labels):
+def replace_urls(string_input: str, replace_by: str = "URL"):
     """
-    Do some pre-processing on the labels. They're supposed to all be zeros and ones, but some values might
-    be no 0 and 1, we replace these values by the mode of the column.
-    Also, drop all columns that only have a single value (only zeros or only ones)
-    :param labels: pandas dataframe, (n_samples x n_outputs)
-    :return: pandas dataframe, (n_samples x n_outputs) with only zeros and ones
+    Replace url's in a string by replace_by
+    :param string_input: string input
+    :param replace_by: string, what we want to replace the url with
+    :return: string, with urls replaced by replaced_by
     """
-    labels[labels > 1] = np.nan
-    labels[labels < 0] = np.nan
-
-    for column in labels.columns:
-        labels[column].fillna(labels[column].mode()[0], inplace=True)
-        labels[column] = labels[column].astype(int)
-
-    columns_only_zeros = labels.columns[labels.sum(axis=0) == 0].values
-    columns_only_ones = labels.columns[labels.sum(axis=0) == len(labels)].values
-    labels = labels.drop(columns=np.concatenate((columns_only_ones, columns_only_zeros)), axis=1)
-    category_names = labels.columns.values
-
-    return labels, category_names
+    return re.sub(r'http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\(\), ]|(?:%[0-9a-fA-F][0-9a-fA-F]))+', replace_by,
+                  string_input)
 
 
 def remove_punctuation(text):
@@ -72,6 +60,12 @@ def tokenize(text):
 
     # remove punctuation
     text = remove_punctuation(text)
+
+    # replace url's
+    text = replace_urls(text)
+
+    # remove numbers, replace with space (they don't really add much I think)
+    text = re.sub("\d", " ", text)
 
     # tokenize into words
     tokens = word_tokenize(text)
@@ -94,10 +88,10 @@ def build_model():
 
     parameters = {"count_vec__max_df": [0.95, 0.99, 1.0],
                   #"count_vec__min_df": [0.005, 0.01, 1],
-                  # "classifier__estimator__n_estimators": [10, 50, 100],
-                  #"classifier__estimator__max_features": ["sqrt", "log2"]
+                  "classifier__estimator__n_estimators": [50, 100],
+                  "classifier__estimator__max_features": ["sqrt", "log2"]
                   }
-    model = GridSearchCV(pipeline, parameters, cv="warn")
+    model = GridSearchCV(pipeline, parameters, cv=5)
     return model
 
 
@@ -147,6 +141,8 @@ def main():
         
         print("Training model...")
         model.fit(inputs_train, labels_train)
+
+        print(f"Parameters used are {model.best_params_}")
         
         print("Evaluating model...")
         evaluate_model(model, inputs_test, labels_test, category_names)
