@@ -1,3 +1,6 @@
+# local package
+-e .
+
 pandas
 sqlalchemy
 scikit-learn
