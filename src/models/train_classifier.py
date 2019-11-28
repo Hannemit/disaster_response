@@ -84,6 +84,14 @@ def tokenize(text: str):
 
 
 def build_model(do_gridsearch: bool = True):
+    """
+    Create a pipeline and define parameters to search over. GridSearchCV will find the best set of parameter
+    using cross validation.
+    If we do not want to use a grid search (it may take long), just set do_gridsearch to False
+    :param do_gridsearch: boolean, if True then return a model which will perform a grid search, otherwise the model
+            just consistent of the steps in the pipeline.
+    :return: model
+    """
     pipeline = Pipeline([
         ("count_vec", CountVectorizer(tokenizer=tokenize)),
         ("tfidf", TfidfTransformer()),
