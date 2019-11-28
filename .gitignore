@@ -10,6 +10,14 @@ __pycache__/
 *.pyc
 .idea/
 
+# models, data, etc..
+*.pkl
+*.db
+
+# trained models
+!models/
+models/*
+
 # Distribution / packaging
 .Python
 build/
