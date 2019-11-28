@@ -27,12 +27,12 @@ Create a virtual environment using (linux)
 ### Instructions:
 1. Run the following commands in the project's root directory to set up your database and model.
 
-    - To run ETL pipeline that cleans data and stores in database
+    - To run ETL pipeline that cleans data and stores in database  
         `python src/data/process_data.py src/data/disaster_messages.csv src/data/disaster_categories.csv disaster_response.db`
-    - To run ML pipeline that trains classifier and saves
+    - To run ML pipeline that trains classifier and saves  
         `python src/models/train_classifier.py disaster_response.db models/classifier.pkl`
 
-2. Run the following command (also in the project root directory) to run the web app.
+2. Run the following command (also in the project root directory) to run the web app.  
     `python run.py`
 
 3. Go to http://0.0.0.0:3001/
