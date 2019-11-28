@@ -51,7 +51,13 @@ def remove_punctuation(text):
     return re.sub(r"[^a-zA-Z0-9]", " ", text)
 
 
-def tokenize(text):
+def tokenize(text: str):
+    """
+    tokenize some input text. We convert to lower case, remove punctuation, replace urls, remove stop words,
+    etc..
+    :param text: string, some text we want to tokenize
+    :return: a list of strings, the tokens in the original text
+    """
 
     # lowercase
     text = text.lower()
@@ -62,7 +68,7 @@ def tokenize(text):
     # replace url's
     text = replace_urls(text)
 
-    # remove numbers, replace with space (they don't really add much I think)
+    # remove numbers, replace with space (they don't really add much)
     text = re.sub("\d", " ", text)
 
     # tokenize into words

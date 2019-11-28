@@ -69,6 +69,11 @@ def create_categories_columns(categories_column):
 
 
 def remove_duplicates(data_frame):
+    """
+    Remove duplicate rows from dataframe
+    :param data_frame: pandas dataframe
+    :return: pandas dataframe without duplicate rows
+    """
     num_dups = sum(data_frame.duplicated())
     if num_dups == 0:
         return data_frame
