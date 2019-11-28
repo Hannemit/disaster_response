@@ -1,5 +1,5 @@
 import sys
-from sqlalchemy import create_engine
+
 import pandas as pd
 import numpy as np
 import re
@@ -9,7 +9,9 @@ from nltk.corpus import stopwords
 from nltk.stem.wordnet import WordNetLemmatizer
 import os
 
-from sklearn.pipeline import Pipeline, FeatureUnion
+from src.data import load_save_data
+
+from sklearn.pipeline import Pipeline
 from sklearn.model_selection import train_test_split, GridSearchCV
 from sklearn.metrics import precision_recall_fscore_support
 from sklearn.feature_extraction.text import CountVectorizer, TfidfTransformer
@@ -17,25 +19,20 @@ from sklearn.feature_extraction.text import CountVectorizer, TfidfTransformer
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.multioutput import MultiOutputClassifier
 
+# these are required for the tokenize function to work. Download them once at the start here.
 nltk.download('stopwords')
 nltk.download('punkt')
 nltk.download('wordnet')
 
-import pickle
 
-from collections import Counter
-
-
-def load_data(database_filepath, data_base_name=None):
-    assert database_filepath[-3:] == ".db", "include the .db extension in the database filepath"
-    if data_base_name is None:
-        data_base_name = database_filepath[:-3]
-    engine = create_engine(f"sqlite:///data/{database_filepath}")
-    print(f"engine created. Now trying to read table {data_base_name}")
-    df = pd.read_sql_table(f"{data_base_name}", engine)
-    inputs = df["message"]
-    labels = df.drop(columns=["id", "message", "original", "genre"], axis=1)
-
+def select_inputs_labels(data_frame):
+    """
+    Given the input dataframe, split it into our input data and our labels
+    :param data_frame:
+    :return:
+    """
+    inputs = data_frame["message"]
+    labels = data_frame.drop(columns=["id", "message", "original", "genre"], axis=1)
     return inputs, labels
 
 
@@ -55,6 +52,7 @@ def remove_punctuation(text):
 
 
 def tokenize(text):
+
     # lowercase
     text = text.lower()
 
@@ -79,7 +77,7 @@ def tokenize(text):
     return tokens
 
 
-def build_model():
+def build_model(do_gridsearch: bool = True):
     pipeline = Pipeline([
         ("count_vec", CountVectorizer(tokenizer=tokenize)),
         ("tfidf", TfidfTransformer()),
@@ -91,7 +89,11 @@ def build_model():
                   "classifier__estimator__n_estimators": [50, 100],
                   "classifier__estimator__max_features": ["sqrt", "log2"]
                   }
-    model = GridSearchCV(pipeline, parameters, cv=5)
+
+    if do_gridsearch:
+        model = GridSearchCV(pipeline, parameters, cv=5)
+    else:
+        model = pipeline
     return model
 
 
@@ -120,43 +122,38 @@ def evaluate_model(model, inputs_test, labels_test, category_names):
     print(score_df.mean())
 
 
-def save_model(model, model_filepath):
-    assert model_filepath[-4:] == ".pkl", "include the .pkl extension in the model filepath"
-    with open(f"{model_filepath}", "wb") as output_file:
-        pickle.dump(model, output_file)
-
-
 def main():
     if len(sys.argv) == 3:
         database_filepath, model_filepath = sys.argv[1:]
         print(f"Loading data...\n    DATABASE: {database_filepath}")
         print(f"current directory {os.getcwd()}")
-        inputs, labels = load_data(database_filepath)
-        labels, category_names = process_labels(labels)
+
+        df = load_save_data.load_data_from_database(database_filepath)
+        inputs, labels = select_inputs_labels(df)
+        category_names = labels.columns
 
         inputs_train, inputs_test, labels_train, labels_test = train_test_split(inputs, labels, test_size=0.2)
         
         print("Building model...")
-        model = build_model()
+        model = build_model(do_gridsearch=False)
         
         print("Training model...")
         model.fit(inputs_train, labels_train)
 
-        print(f"Parameters used are {model.best_params_}")
+        # print(f"Parameters used are {model.best_params_}")
         
         print("Evaluating model...")
         evaluate_model(model, inputs_test, labels_test, category_names)
 
         print(f"Saving model...\n    MODEL: {model_filepath}")
-        save_model(model, model_filepath)
+        load_save_data.pickle_dump(model, model_filepath)
 
         print("Trained model saved!")
 
     else:
-        print("Please provide the filepath of the disaster messages database "
-              "as the first argument and the filepath of the pickle file to "
-              "save the model to as the second argument. \n\nExample: python "
-              "train_classifier.py ../data/DisasterResponse.db models/classifier.pkl")
+        print("Please provide the filepath of the disaster messages database as the first argument and the filepath "
+              "of the pickle file to save the model to as the second argument. \n\nExample: "
+              "python src/models/train_classifier.py disaster_response.db models/classifier.pkl")
 
 
 if __name__ == '__main__':

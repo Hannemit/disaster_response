@@ -1,6 +1,6 @@
 import sys
 import pandas as pd
-from sqlalchemy import create_engine
+from src.data import load_save_data
 import numpy as np
 
 
@@ -52,14 +52,18 @@ def create_categories_columns(categories_column):
     # convert the values in categories to 0's and 1's. If the original value is not 0 or 1, replace it by the col mode
     for column in categories:
         category_values = categories[column].str[-1]  # get series with last characters, ideally all 0 or 1
-        category_values[(category_values != 0) & (category_values != 1)] = np.nan
+        category_values[(category_values != "0") & (category_values != "1")] = np.nan
         categories[column] = category_values
+
+        if categories[column].isnull().sum() == len(categories[column]):
+            raise RuntimeError(f"column did not have any 0's or 1's...{categories[column]}")
 
         # replace nans by mode, and cast as integers
         categories[column].fillna(categories[column].mode()[0], inplace=True)
         categories[column] = categories[column].astype(int)
 
     categories = remove_non_informative_categories(categories)
+    assert categories.isnull().sum().sum() == 0, "should not have nans in dataframe"
 
     return categories
 
@@ -90,12 +94,6 @@ def clean_data(df):
     return df
 
 
-def save_data(df, database_filename):
-    assert database_filename[-3:] == ".db", "database filename must end in '.db'"
-    engine = create_engine(f"sqlite:///data/{database_filename}")
-    df.to_sql(f"{database_filename[:-3]}", engine, index=False)
-
-
 def main():
     if len(sys.argv) == 4:
 
@@ -108,17 +106,15 @@ def main():
         df = clean_data(df)
         
         print(f"Saving data...\nDATABASE: {database_filepath}")
-        save_data(df, database_filepath)
+        load_save_data.save_data_to_database(df, database_filepath)
         
         print("Cleaned data saved to database!")
     
     else:
-        print("Please provide the filepaths of the messages and categories "
-              "datasets as the first and second argument respectively, as "
-              "well as the filepath of the database to save the cleaned data "
-              "to as the third argument. \n\nExample: python process_data.py "
-              "disaster_messages.csv disaster_categories.csv "
-              "DisasterResponse.db")
+        print("Please provide the filepaths of the messages and categories datasets as the first and second argument "
+              "respectively, as well as the filepath of the database to save the cleaned data to as the third argument."
+              "\n\nExample\n: python src/data/process_data.py data/raw/disaster_messages.csv "
+              "data/raw/disaster_categories.csv disaster_response.db")
 
 
 if __name__ == '__main__':
