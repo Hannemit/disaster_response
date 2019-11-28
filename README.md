@@ -21,6 +21,12 @@ Create a virtual environment using (linux)
  `conda create -n disaster_response python=3.7.5 numpy==1.17.3 scipy==1.3.1`
 
 #### install other requirements
+First, activate the virtual environment  
+
+`conda activate disaster_response`
+
+then, install the requirements  
+
 `pip install requirements.txt`
 
 
