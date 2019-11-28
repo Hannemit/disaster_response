@@ -1,6 +1,7 @@
 import sys
 import pandas as pd
 from sqlalchemy import create_engine
+import numpy as np
 
 
 def load_data(messages_filepath: str, categories_filepath: str):
@@ -18,6 +19,19 @@ def load_data(messages_filepath: str, categories_filepath: str):
     return df
 
 
+def remove_non_informative_categories(categories_df):
+    """
+    Remove columns which have a single label for the entire input dataset, i.e. categories that have only zeros
+    or only ones.
+    :param categories_df: pandas dataframe, the category labels
+    :return: pandas dataframe with possibly fewer columns
+    """
+    columns_only_zeros = categories_df.columns[categories_df.sum(axis=0) == 0].values
+    columns_only_ones = categories_df.columns[categories_df.sum(axis=0) == len(categories_df)].values
+    categories_df = categories_df.drop(columns=np.concatenate((columns_only_ones, columns_only_zeros)), axis=1)
+    return categories_df
+
+
 def create_categories_columns(categories_column):
     """
     Clean the categories column, create many columns out of it with 0's and 1's
@@ -26,20 +40,27 @@ def create_categories_columns(categories_column):
     """
     # create a dataframe, we now have 36 columns
     categories = categories_column.str.split(";", expand=True)
-    assert len(categories.columns) == 36, f"Need 36 columns, not {len(categories.columns)}, cols: {categories.colunns}"
+    # assert len(categories.columns) == 36, f"Need 36 columns, not {len(categories.columns)}, {categories.colunns}"
 
     # use the first row to extract the new column names
     row = categories.iloc[0]
     category_col_names = [value[:-2] for value in row]
     assert "related" in category_col_names
     assert "hospitals" in category_col_names
-
     categories.columns = category_col_names
 
-    # convert the values in categories to 0's and 1's
+    # convert the values in categories to 0's and 1's. If the original value is not 0 or 1, replace it by the col mode
     for column in categories:
-        categories[column] = categories[column].str[-1]  # get last character, which is 0 or 1
+        category_values = categories[column].str[-1]  # get series with last characters, ideally all 0 or 1
+        category_values[(category_values != 0) & (category_values != 1)] = np.nan
+        categories[column] = category_values
+
+        # replace nans by mode, and cast as integers
+        categories[column].fillna(categories[column].mode()[0], inplace=True)
         categories[column] = categories[column].astype(int)
+
+    categories = remove_non_informative_categories(categories)
+
     return categories
 
 
