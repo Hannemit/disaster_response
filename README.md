@@ -34,7 +34,7 @@ then, install the requirements
 1. Run the following commands in the project's root directory to set up your database and model.
 
     - To run ETL pipeline that cleans data and stores in database  
-        `python src/data/process_data.py src/data/disaster_messages.csv src/data/disaster_categories.csv disaster_response.db`
+        `python src/data/process_data.py src/data/raw/disaster_messages.csv src/data/raw/disaster_categories.csv disaster_response.db`
     - To run ML pipeline that trains classifier and saves  
         `python src/models/train_classifier.py disaster_response.db models/classifier.pkl`
 
