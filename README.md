@@ -21,7 +21,7 @@ Create a virtual environment using (linux)
  `conda create -n disaster_response python=3.7.5 numpy==1.17.3 scipy==1.3.1`
 
 #### install other requirements
-First, activate the virtual environment  
+`cd` into `disaster_response` (i.e. go to the root of the project), activate the virtual environment with 
 
 `conda activate disaster_response`
 
@@ -30,11 +30,11 @@ then, install the requirements
 `pip install -r requirements.txt`
 
 
-### Instructions:
+### Running instructions:
 1. Run the following commands in the project's root directory to set up your database and model.
 
     - To run ETL pipeline that cleans data and stores in database  
-        `python src/data/process_data.py src/data/raw/disaster_messages.csv src/data/raw/disaster_categories.csv disaster_response.db`
+        `python src/data/process_data.py data/raw/disaster_messages.csv data/raw/disaster_categories.csv disaster_response.db`
     - To run ML pipeline that trains classifier and saves  
         `python src/models/train_classifier.py disaster_response.db models/classifier.pkl`
 
