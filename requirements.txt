@@ -3,3 +3,5 @@ sqlalchemy
 scikit-learn
 nltk
 numpy
+flask
+plotly

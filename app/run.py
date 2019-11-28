@@ -1,37 +1,73 @@
+"""
+fuser -k port_number/tcp
+to kill process at port port_number
+"""
+
 import json
 import plotly
 import pandas as pd
 
 from nltk.stem import WordNetLemmatizer
 from nltk.tokenize import word_tokenize
-
+from nltk.corpus import stopwords
 from flask import Flask
 from flask import render_template, request, jsonify
-from plotly.graph_objs import Bar
-from sklearn.externals import joblib
+import plotly.graph_objects as gob
+# from sklearn.externals import joblib
 from sqlalchemy import create_engine
+import pickle
+import re
+
+
+def replace_urls(string_input: str, replace_by: str = "URL"):
+    """
+    Replace url's in a string by replace_by
+    :param string_input: string input
+    :param replace_by: string, what we want to replace the url with
+    :return: string, with urls replaced by replaced_by
+    """
+    return re.sub(r'http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\(\), ]|(?:%[0-9a-fA-F][0-9a-fA-F]))+', replace_by,
+                  string_input)
+
+
+def remove_punctuation(text):
+    return re.sub(r"[^a-zA-Z0-9]", " ", text)
+
+
+def tokenize(text):
+    # lowercase
+    text = text.lower()
+
+    # remove punctuation
+    text = remove_punctuation(text)
+
+    # replace url's
+    text = replace_urls(text)
+
+    # remove numbers, replace with space (they don't really add much I think)
+    text = re.sub("\d", " ", text)
+
+    # tokenize into words
+    tokens = word_tokenize(text)
+
+    # lemmatize and remove stopwords
+    stop_words = stopwords.words("english")
+    lemmatizer = WordNetLemmatizer()
+    tokens = [lemmatizer.lemmatize(word) for word in tokens if word not in stop_words]
+    tokens = [lemmatizer.lemmatize(word, pos="v") for word in tokens]
+
+    return tokens
 
 
 app = Flask(__name__)
 
-def tokenize(text):
-    tokens = word_tokenize(text)
-    lemmatizer = WordNetLemmatizer()
-
-    clean_tokens = []
-    for tok in tokens:
-        clean_tok = lemmatizer.lemmatize(tok).lower().strip()
-        clean_tokens.append(clean_tok)
-
-    return clean_tokens
-
 # load data
-engine = create_engine('sqlite:///../data/YourDatabaseName.db')
-df = pd.read_sql_table('YourTableName', engine)
+engine = create_engine('sqlite:///data/disaster_response.db')
+df = pd.read_sql_table('disaster_response', engine)
 
 # load model
-model = joblib.load("../models/your_model_name.pkl")
-
+with open("./models/classifier.pkl", "rb") as file:
+    model = pickle.load(file)
 
 # index webpage displays cool visuals and receives user input text for model
 @app.route('/')
@@ -48,7 +84,7 @@ def index():
     graphs = [
         {
             'data': [
-                Bar(
+                gob.Bar(
                     x=genre_names,
                     y=genre_counts
                 )
