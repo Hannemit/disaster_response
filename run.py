@@ -11,11 +11,16 @@ from flask import render_template, request
 import plotly.graph_objects as gob
 from src.models.train_classifier import replace_urls, remove_punctuation, tokenize
 from src.data import load_save_data
+from src.data.process_data import load_data
+from src.models.train_classifier import select_inputs_labels
+
 
 app = Flask(__name__)
 
-df = load_save_data.load_data_from_database("disaster_response.db")
+df = load_data("data/raw/disaster_messages.csv", "data/raw/disaster_categories.csv")
 model = load_save_data.pickle_load("./models/classifier.pkl")
+processed_df = load_save_data.load_data_from_database("disaster_response.db")
+_, labels = select_inputs_labels(processed_df)
 
 # index webpage displays cool visuals and receives user input text for model
 @app.route("/")
@@ -25,6 +30,7 @@ def index():
     # extract data needed for visuals
     genre_counts = df.groupby("genre").count()["message"]
     genre_names = list(genre_counts.index)
+    sum_by_categories = labels.sum()
 
     # create visuals
     graphs = [
@@ -43,6 +49,24 @@ def index():
                 },
                 "xaxis": {
                     "title": "Genre"
+                }
+            }
+        },
+        {
+            "data": [
+                gob.Bar(
+                    x=sum_by_categories.index.values,
+                    y=sum_by_categories.values
+                )
+            ],
+
+            "layout": {
+                "title": "Distribution of message categories",
+                "yaxis": {
+                    "title": "count"
+                },
+                "xaxis": {
+                    "title": "category"
                 }
             }
         }
@@ -64,7 +88,7 @@ def go():
 
     # use model to predict classification for query
     classification_labels = model.predict([query])[0]
-    classification_results = dict(zip(df.columns[4:], classification_labels))
+    classification_results = dict(zip(labels.columns, classification_labels))
 
     # This will render the go.html Please see that file. 
     return render_template(
